@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from  matplotlib.widgets import Slider, RectangleSelector
 
-from utils import format_time
+from utils import format_time, get_random_color
 
 SLIDER_SIZE = (0.25, 0.1, 0.5, 0.03)
 
@@ -12,6 +12,7 @@ class Movie:
         self.time = time
         self.frame_index = 0
         self.fig, self.ax = plt.subplots()
+
 
     # Visualize the movie by going through images over period of time 
     def visualize(self):
@@ -41,19 +42,28 @@ class Movie:
             valstep=1
         )
 
+        self.selected_color = get_random_color()
+
         # Add rectangle selector for region selection
         self.selector = RectangleSelector(
             self.ax, 
-            self.draw,
+            onselect=self.draw,
             useblit=True,
             spancoords='pixels',
-            interactive=True
+            interactive=True,
+            props = dict(
+                facecolor=self.selected_color,
+                edgecolor = self.selected_color,
+                alpha=0.6,
+                fill=True
+            )
         )
         
         # Update the frame on scrolling
         self.frame_slider.on_changed(self.update_frame)
 
         plt.show()
+
 
     # Update the frame index based on the slider's position
     def update_frame(self, val):
@@ -71,6 +81,7 @@ class Movie:
         # Redraw the figure canvas
         self.fig.canvas.draw_idle()
       
+
     # Draw shape on the image
     def draw(self, eclick, erelease):
         # Get the coordinates of the rectangle
@@ -89,7 +100,14 @@ class Movie:
                 y_end
         )
         self.plot_relative_intensity(relative_intensity)
-    
+
+        self.selected_color = get_random_color()
+        self.selector.set_props(
+            facecolor=self.selected_color,
+            edgecolor=self.selected_color,
+        )
+
+
     # Calculate Mean Intensity
     def calculate_mean_intensity(self, x_start, x_end, y_start, y_end):
         # Extract pixel values within the rectangle for each frame
@@ -104,18 +122,15 @@ class Movie:
                                 for intensity in region_intensities]
         return relative_intensities
     
+
     # Plot relative intensity
     def plot_relative_intensity(self, relative_intensities):
         # Create a new figure for intensity plot
         _, ax = plt.subplots()
         
         # Plot the relative intensity
-        ax.plot(self.time, relative_intensities, label="Relative Intensity")
-
-        # Formatting the y-axis to show percentage
+        ax.plot(self.time, relative_intensities, label="Relative Intensity", color=self.selected_color)
         ax.set_ylabel("Relative Intensity (%)")
-        
-        # Set x-axis to HH:MM:SS format
         ax.set_xlabel("Time (HH:MM:SS)")
         ax.legend()
         
